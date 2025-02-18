@@ -41,7 +41,7 @@ model {
             component kafkaProducer "Kafka Producer" "Отправляет события постов (просмотры, лайки, комментарии)"
         }
 
-        postgresDb = container "PostgreSQL" {
+        postgresDbUsers = container "PostgreSQL" {
             description "Хранение данных пользователей"
             technology "Database"
             style {
@@ -49,7 +49,7 @@ model {
             }
         }
 
-        cassandraDb = container "Cassandra" {
+        postgresDbPosts = container "Cassandra" {
             description "Хранение данных постов"
             technology "Database"
             style {
@@ -79,9 +79,9 @@ model {
     socialNetwork.apiGateway -> socialNetwork.statisticsService "Маршрутизирует" "JSON/HTTPS"
     socialNetwork.apiGateway -> socialNetwork.postsService "Маршрутизирует" "Protocol Buffers/gRPC"
 
-    socialNetwork.postsService -> socialNetwork.cassandraDb "Читает/Пишет" "CQL"
+    socialNetwork.postsService -> socialNetwork.postgresDbPosts "Читает/Пишет" "CQL"
     socialNetwork.statisticsService -> socialNetwork.clickhouseDb "Читает/Пишет" "SQL"
-    socialNetwork.userService -> socialNetwork.postgresDb "Читает/Пишет" "SQL"
+    socialNetwork.userService -> socialNetwork.postgresDbUsers "Читает/Пишет" "SQL"
 
     socialNetwork.postsService -> socialNetwork.kafka "Публикует" "posts_events"
     socialNetwork.statisticsService -> socialNetwork.kafka "Подписывается" "posts_events"
