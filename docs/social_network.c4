@@ -1,0 +1,97 @@
+specification {
+    element UI {
+        style {
+            shape person
+            color green
+        }
+    }
+    element softwareSystem
+    element container
+    element component
+}
+
+model {
+    UI = UI "UI" "UI для социальной сети"
+
+    socialNetwork = softwareSystem "Social Network" {
+        apiGateway = container "API Gateway" {
+            description "Маршрутизация запросов и управление доступом"
+            technology "Python, Flask"
+        }
+
+        userService = container "User Service" {
+            description "Управление пользователями: аутентификация, регистрация, информация"
+            technology "Java, Spring Boot"
+        }
+
+        statisticsService = container "Posts Statistics Service" {
+            description "Сервис статистики для подсчета статистики по постам: лайков, просмотров, комментариев"
+            technology "Go, gin"
+
+            component statisticsStore "Storing posts statistics" "Сохраняет данные для статистики"
+            component kafkaConsumer "Kafka Consumer" "Получает события постов"
+        }
+
+        postsService = container "Posts Service" {
+            description "Управление постами и комментариями"
+            technology "C++, userver"
+
+            component postsServiceComponent "Posts Service" "Управляет данными постов"
+            component actionsService "Actions Service" "Управляет данными о событиях постов"
+            component kafkaProducer "Kafka Producer" "Отправляет события постов (просмотры, лайки, комментарии)"
+        }
+
+        postgresDbUsers = container "PostgreSQL" {
+            description "Хранение данных пользователей"
+            technology "Database"
+            style {
+                shape cylinder
+            }
+        }
+
+        postgresDbPosts = container "Cassandra" {
+            description "Хранение данных постов"
+            technology "Database"
+            style {
+                shape cylinder
+            }
+        }
+
+        clickhouseDb = container "ClickHouse" {
+            description "Хранение данных для статистики"
+            technology "Database"
+            style {
+                shape cylinder
+            }
+        }
+
+        kafka = container "Kafka" {
+            description "Обмен событиями между сервисами"
+            technology "Message Broker"
+            style {
+                shape queue
+            }
+        }
+    }
+
+    UI -> socialNetwork.apiGateway "Использует посредством REST API" "HTTPS"
+    socialNetwork.apiGateway -> socialNetwork.userService "Маршрутизирует" "JSON/HTTPS"
+    socialNetwork.apiGateway -> socialNetwork.statisticsService "Маршрутизирует" "JSON/HTTPS"
+    socialNetwork.apiGateway -> socialNetwork.postsService "Маршрутизирует" "Protocol Buffers/gRPC"
+
+    socialNetwork.postsService -> socialNetwork.postgresDbPosts "Читает/Пишет" "CQL"
+    socialNetwork.statisticsService -> socialNetwork.clickhouseDb "Читает/Пишет" "SQL"
+    socialNetwork.userService -> socialNetwork.postgresDbUsers "Читает/Пишет" "SQL"
+
+    socialNetwork.postsService -> socialNetwork.kafka "Публикует" "posts_events"
+    socialNetwork.statisticsService -> socialNetwork.kafka "Подписывается" "posts_events"
+
+    socialNetwork.postsService.actionsService -> socialNetwork.postsService.kafkaProducer "Использует"
+    socialNetwork.statisticsService.statisticsStore -> socialNetwork.statisticsService.kafkaConsumer "Использует"
+}
+
+views {
+    view social_network {
+        include *
+    }
+}
