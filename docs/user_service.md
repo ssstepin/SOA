@@ -5,6 +5,7 @@ erDiagram
         string name
         string surname
         string login
+        timestamp created 
         bson meta
     }
 
@@ -25,6 +26,23 @@ erDiagram
         string device_model
      }
 
+     user_roles_info {
+        int id PK
+        int parent_id FK
+        string name
+        text description
+     }
+
+     user_roles_items {
+        int id PK
+        int role_id FK
+        int user_id FK
+        timestamp granted_ts
+        timestamp due_ts
+     }
+
      user ||--|| user_auth_info : asosciated
      user ||--o{ user_sessions: created
+     user ||--o{ user_roles_items: "have roles"
+     user_roles_info ||--o{ user_roles_items: granted
 ```
