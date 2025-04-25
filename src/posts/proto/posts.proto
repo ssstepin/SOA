@@ -1,0 +1,112 @@
+syntax = "proto3";
+package posts;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "social-network/posts/main";
+
+service Posts {
+  rpc CreatePost(CreatePostRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/posts"
+      body: "*"
+    };
+  }
+  rpc CreateComment(CreateCommentRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/comments"
+      body: "*"
+    };
+  }
+
+  rpc ModifyPost(ModifyPostRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/posts"
+      body: "*"
+    };
+  }
+  rpc ModifyComment(ModifyCommentRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/comments"
+      body: "*"
+    };
+  }
+
+  rpc DeletePost(DeletePostRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/posts"
+    };
+  }
+  rpc DeleteComment(DeleteCommentRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/comments"
+    };
+  }
+
+  rpc GetPosts(GetPostsRequest) returns (stream PostInfo) {
+    option (google.api.http) = {
+      get: "/posts"
+    };
+  }
+  rpc GetComments(GetCommentsRequest) returns (stream CommentInfo) {
+    option (google.api.http) = {
+      get: "/comments"
+    };
+  }
+}
+
+message PostInfo {
+    string id = 1;
+    google.protobuf.Timestamp created = 2;
+    string author = 3;
+    string title = 4;
+    string text = 5;
+}
+
+message CreatePostRequest {
+    string title = 1;
+    string text = 2;
+}
+
+message DeletePostRequest {
+    string id = 1;
+}
+
+message ModifyPostRequest {
+    string id = 1;
+    string title = 2;
+    string text = 3;
+}
+
+message GetPostsRequest {
+    string user_id = 1;
+}
+
+message CommentInfo {
+    string id = 1;
+    string post_id = 2;
+    google.protobuf.Timestamp created = 3;
+    string author = 4;
+    string text = 5;
+}
+
+message CreateCommentRequest {
+    string post_id = 1;
+    string text = 2;
+}
+
+message DeleteCommentRequest {
+    string id = 1;
+}
+
+message ModifyCommentRequest {
+    string id = 1;
+    string text = 2;
+}
+
+
+message GetCommentsRequest {
+    string post_id = 1;
+}

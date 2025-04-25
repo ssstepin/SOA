@@ -1,0 +1,54 @@
+services:
+    auth:
+        build: 
+            context: auth
+        depends_on:
+            - users_db
+        ports:
+            - 8091:8091
+    
+    posts:
+        build: 
+            context: posts
+        depends_on:
+            - posts_db
+        ports:
+            - 8093:8093
+
+    grpc-gateway:
+        build: 
+            context: grpc-gateway
+        depends_on:
+            - posts
+        ports:
+            - 8094:8094
+    
+    gateway:
+        build: 
+            context: gateway
+        depends_on:
+            - auth
+        ports:
+            - 8092:8092
+    
+    users_db:
+        image: postgres:latest
+        restart: always
+        environment:
+            POSTGRES_USER: auth
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: usersdb
+        ports:
+            - 5432:5432
+        command: -p 5432
+
+    posts_db:
+        image: postgres:latest
+        restart: always
+        environment:
+            POSTGRES_USER: posts
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: postsdb
+        ports:
+            - 5433:5433
+        command: -p 5433
