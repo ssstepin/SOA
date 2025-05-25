@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS posts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+
+    text TEXT,
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

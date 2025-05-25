@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(255) NOT NULL UNIQUE,
+    mail VARCHAR(255) NOT NULL UNIQUE,
+    password_md5 VARCHAR(255) NOT NULL,
+
+    phone VARCHAR(255),
+    first_name VARCHAR(255),
+    second_name VARCHAR(255),
+
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

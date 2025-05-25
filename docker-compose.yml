@@ -1,0 +1,162 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      posts:
+        condition: service_started
+      statistics:
+        condition: service_started
+      auth:
+        condition: service_started
+    restart: unless-stopped
+
+  auth:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations-auth:
+        condition: service_completed_successfully
+
+  posts:
+    build:
+      context: ./posts
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      POSTGRES_URL: "postgres://admin:superpass@postgres:5432/posts?sslmode=disable"
+      KAFKA_BROKERS: "kafka:9092"
+      KAFKA_LIKES_TOPIC: "post_likes"
+      KAFKA_VIEWS_TOPIC: "post_views"
+      KAFKA_COMMENTS_TOPIC: "post_comments"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations-posts:
+        condition: service_completed_successfully
+      kafka:
+        condition: service_started
+
+  statistics:
+    build:
+      context: ./statistics
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations-statistics:
+        condition: service_completed_successfully
+
+
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: superpass
+      POSTGRES_MULTIPLE_DATABASES: auth, posts, statistics
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrations-auth:
+    image: migrate/migrate:v4.16.2
+    volumes:
+      - ./auth/migrations:/migrations
+    environment:
+      DB_URL: postgres://admin:superpass@postgres:5432/auth?sslmode=disable
+    command:
+      -path
+      /migrations
+      -database
+      postgres://admin:superpass@postgres:5432/auth?sslmode=disable
+      up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  migrations-posts:
+    image: migrate/migrate:v4.16.2
+    volumes:
+      - ./posts/migrations:/migrations
+    environment:
+      DB_URL: postgres://admin:superpass@postgres:5432/posts?sslmode=disable
+    command:
+      -path
+      /migrations
+      -database
+      postgres://admin:superpass@postgres:5432/posts?sslmode=disable
+      up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  migrations-statistics:
+    image: migrate/migrate:v4.16.2
+    volumes:
+      - ./statistics/migrations:/migrations
+    environment:
+      DB_URL: postgres://admin:superpass@postgres:5432/statistics?sslmode=disable
+    command:
+      -path
+      /migrations
+      -database
+      postgres://admin:superpass@postgres:5432/statistics?sslmode=disable
+      up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+#  kafdrop:
+#    image: obsidiandynamics/kafdrop
+#    ports:
+#      - "9000:9000"
+#    environment:
+#      KAFKA_BROKER_CONNECT: kafka:9092
+#    depends_on:
+#      - kafka
+
+volumes:
+  postgres_data:
