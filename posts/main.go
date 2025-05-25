@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"posts/model"
 	"posts/repository"
 	"posts/storage"
 	"time"
@@ -103,6 +104,28 @@ func (s *postsServer) CommentPost(ctx context.Context, req *pb.CommentRequest) (
 	return &pb.PostActionResponse{Success: true}, nil
 }
 
+func (s *postsServer) CreatePost(ctx context.Context, req *pb.CreatePostRequest) (*pb.CreatePostResponse, error) {
+	log.Printf("Received CreatePost request from user %s", req.UserId)
+
+	post := model.Post{
+		UserId: req.UserId,
+		Text:   req.Text,
+	}
+
+	err := s.postsRepo.CreatePost(&post)
+
+	if err != nil {
+		log.Printf("Error creating post: %v", err)
+		return nil, err
+	}
+
+	return &pb.CreatePostResponse{
+		PostId: post.ID,
+		UserId: req.UserId,
+		Text:   req.Text,
+	}, nil
+}
+
 func main() {
 	// Инициализация PostgreSQL...
 	pg, err := storage.New("postgres://admin:superpass@postgres:5432/posts?sslmode=disable")
@@ -142,6 +165,13 @@ func main() {
 		viewsTopic:    os.Getenv("KAFKA_VIEWS_TOPIC"),
 		commentsTopic: os.Getenv("KAFKA_COMMENTS_TOPIC"),
 	})
+
+	log.Println("Registered methods:")
+	for name, info := range s.GetServiceInfo() {
+		for _, method := range info.Methods {
+			log.Printf("- %s/%s", name, method.Name)
+		}
+	}
 
 	log.Println("Starting posts service on :8082")
 	if err := s.Serve(lis); err != nil {

@@ -18,50 +18,31 @@ func NewEventRepository(db *sql.DB) *EventRepository {
 }
 
 func (r *EventRepository) InitSchema(ctx context.Context) error {
-	queries := []string{
-		`CREATE TABLE IF NOT EXISTS events (
+	_, err := r.db.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS events (
 			id SERIAL PRIMARY KEY,
 			event_type VARCHAR(10) NOT NULL CHECK (event_type IN ('like', 'view', 'comment')),
 			user_id INTEGER NOT NULL,
 			post_id INTEGER NOT NULL,
 			comment_text TEXT,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-		)`,
-
-		`CREATE INDEX IF NOT EXISTS idx_events_post_id ON events(post_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at)`,
-
-		`CREATE MATERIALIZED VIEW IF NOT EXISTS events_daily AS
-		SELECT 
-			date_trunc('day', created_at) AS day,
-			post_id,
-			event_type,
-			COUNT(*) AS count
-		FROM events
-		GROUP BY day, post_id, event_type
-		WITH DATA`,
-
-		`CREATE OR REPLACE FUNCTION refresh_events_daily()
-		RETURNS TRIGGER AS $$
-		BEGIN
-			REFRESH MATERIALIZED VIEW events_daily;
-			RETURN NULL;
-		END;
-		$$ LANGUAGE plpgsql`,
-
-		`CREATE TRIGGER refresh_events_daily_trigger
-		AFTER INSERT OR UPDATE OR DELETE ON events
-		FOR EACH STATEMENT
-		EXECUTE FUNCTION refresh_events_daily()`,
+		)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create events table: %v", err)
 	}
 
-	for _, q := range queries {
-		if _, err := r.db.ExecContext(ctx, q); err != nil {
-			return fmt.Errorf("failed to init schema: %v", err)
-		}
+	_, err = r.db.ExecContext(ctx, `
+		CREATE INDEX IF NOT EXISTS idx_events_post_id ON events(post_id)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to create post_id index: %v", err)
 	}
-	return nil
+
+	_, err = r.db.ExecContext(ctx, `
+		CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at)
+	`)
+	return err
 }
 
 func (r *EventRepository) SaveEvent(ctx context.Context, eventType string, userID, postID uint32, comment *string) error {
@@ -74,28 +55,26 @@ func (r *EventRepository) SaveEvent(ctx context.Context, eventType string, userI
 
 func (r *EventRepository) GetPostStats(ctx context.Context, postID uint32) (*model.PostStats, error) {
 	var stats model.PostStats
-	row := r.db.QueryRowContext(ctx, `
+	err := r.db.QueryRowContext(ctx, `
 		SELECT 
 			COUNT(*) FILTER (WHERE event_type = 'like') AS likes,
 			COUNT(*) FILTER (WHERE event_type = 'view') AS views,
 			COUNT(*) FILTER (WHERE event_type = 'comment') AS comments
 		FROM events
-		WHERE post_id = $1`, postID)
-
-	err := row.Scan(&stats.Likes, &stats.Views, &stats.Comments)
+		WHERE post_id = $1`, postID).Scan(&stats.Likes, &stats.Views, &stats.Comments)
 	return &stats, err
 }
 
 func (r *EventRepository) GetPostTrends(ctx context.Context, postID uint32, days int) ([]model.DayStats, error) {
 	rows, err := r.db.QueryContext(ctx, `
 		SELECT 
-			day::date,
-			COALESCE(SUM(count) FILTER (WHERE event_type = 'like'), 0) AS likes,
-			COALESCE(SUM(count) FILTER (WHERE event_type = 'view'), 0) AS views,
-			COALESCE(SUM(count) FILTER (WHERE event_type = 'comment'), 0) AS comments
-		FROM events_daily
+			date_trunc('day', created_at) AS day,
+			COUNT(*) FILTER (WHERE event_type = 'like') AS likes,
+			COUNT(*) FILTER (WHERE event_type = 'view') AS views,
+			COUNT(*) FILTER (WHERE event_type = 'comment') AS comments
+		FROM events
 		WHERE post_id = $1
-		AND day >= CURRENT_DATE - $2 * INTERVAL '1 day'
+		AND created_at >= NOW() - $2 * INTERVAL '1 day'
 		GROUP BY day
 		ORDER BY day DESC`, postID, days)
 	if err != nil {
