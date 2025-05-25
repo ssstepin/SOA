@@ -23,7 +23,7 @@ def register_user(username, password):
     }
     response = requests.post(url, json=data)
     print(response)
-    return response.json()
+
 
 def login_user(username, password):
     url = f"{BASE_URL}{API_PREFIX}/login"
@@ -189,39 +189,12 @@ def test_statistics():
 
 def main():
     # Генерация тестовых данных
-    # generate_test_data()
+    generate_test_data()
 
-#     # Тестирование статистики
-#     test_statistics()
-#
-#     print("\n=== Тестирование завершено ===")
- # Создаем 10 пользователей
-    for i in range(1, 11):
-        username = f"user_{i}"
-        password = f"password_{i}"
+    # Тестирование статистики
+    test_statistics()
 
-        # Регистрация и авторизация
-        register_user(username, password)
-        jwt_token = login_user(username, password)
-
-        # Создаем пост
-        post_text = FAKER.sentence()
-        post = create_post(jwt_token, post_text)
-
-        users.append({
-            "id": i,
-            "username": username,
-            "jwt": jwt_token,
-            "password": password
-        })
-
-        posts.append({
-            "id": post['post_id'],
-            "user_id": i,
-            "text": post_text
-        })
-
-        print(f"Создан пользователь {username} и пост {post['post_id']}")
+    print("\n=== Тестирование завершено ===")
 
 if __name__ == "__main__":
     main()

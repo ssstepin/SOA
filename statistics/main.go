@@ -78,6 +78,7 @@ func consumeEvents(ctx context.Context, client *kgo.Client, repo *repository.Eve
 		case <-ctx.Done():
 			return
 		default:
+			log.Println("wow")
 			fetches := client.PollFetches(ctx)
 			if fetches.IsClientClosed() {
 				log.Println("Kafka client closed")
@@ -106,6 +107,7 @@ func consumeEvents(ctx context.Context, client *kgo.Client, repo *repository.Eve
 
 func processEvent(record *kgo.Record, repo *repository.EventRepository) error {
 	// Парсинг ключа "user_id:post_id"
+	log.Println("got msg: ", record)
 	parts := strings.Split(string(record.Key), ":")
 	if len(parts) != 2 {
 		return errors.New("invalid event key format")
