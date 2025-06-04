@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package stats;
+
+option go_package = "api/stats";
+
+service StatsService {
+  rpc GetPostStats (PostRequest) returns (PostStatsResponse);
+  rpc GetPostTrends (PostTrendsRequest) returns (PostTrendsResponse);
+  rpc GetTopPosts (TopRequest) returns (TopPostsResponse);
+  rpc GetTopUsers (TopRequest) returns (TopUsersResponse);
+}
+
+message PostRequest {
+  int32 post_id = 1;
+}
+
+message PostTrendsRequest {
+  int32 post_id = 1;
+  uint32 days = 2;
+}
+
+message TopRequest {
+  string metric = 1; // "likes", "views", "comments"
+  uint32 limit = 2;
+}
+
+message PostStatsResponse {
+  uint32 likes = 1;
+  uint32 views = 2;
+  uint32 comments = 3;
+}
+
+message DayStats {
+  string date = 1;
+  uint32 likes = 2;
+  uint32 views = 3;
+  uint32 comments = 4;
+}
+
+message PostTrendsResponse {
+  repeated DayStats trends = 1;
+}
+
+message PostStats {
+  int32 post_id = 1;
+  uint32 count = 2;
+}
+
+message TopPostsResponse {
+  repeated PostStats posts = 1;
+}
+
+message UserStats {
+  int32 user_id = 1;
+  uint32 count = 2;
+}
+
+message TopUsersResponse {
+  repeated UserStats users = 1;
+}

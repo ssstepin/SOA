@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package posts;
+
+option go_package = "api/posts";
+
+service PostsService {
+  rpc CreatePost (CreatePostRequest) returns (CreatePostResponse);
+  rpc LikePost (PostActionRequest) returns (PostActionResponse);
+  rpc ViewPost (PostActionRequest) returns (PostActionResponse);
+  rpc CommentPost (CommentRequest) returns (PostActionResponse);
+}
+
+message CreatePostRequest {
+  int32 user_id = 1;
+  string text = 2;
+}
+
+message CreatePostResponse {
+  int32 post_id = 1;
+  int32 user_id = 2;
+  string text = 3;
+}
+
+message PostActionRequest {
+  int32 user_id = 1;
+  int32 post_id = 2;
+}
+
+message CommentRequest {
+  int32 user_id = 1;
+  int32 post_id = 2;
+  string text = 3;
+}
+
+message PostActionResponse {
+  bool success = 1;
+}
