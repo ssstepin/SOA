@@ -134,7 +134,7 @@ func processEvent(record *kgo.Record, repo *repository.EventRepository) error {
 		eventType = "view"
 	case "post_comments":
 		eventType = "comment"
-		commentText := string(record.Value)
+		commentText := parts[2]
 		comment = &commentText
 	default:
 		return errors.New("unknown topic")

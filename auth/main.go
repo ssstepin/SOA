@@ -67,7 +67,10 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Println(user)
+		if user.Username == "" || user.Mail == "" || user.Password == "" {
+			BadRequestHandler(w, r, errors.New("invalid user"))
+			return
+		}
 
 		err := h.service.RegisterUser(user)
 		if err != nil {
@@ -150,7 +153,10 @@ func (h *homeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "You are: %s", user.Username)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": fmt.Sprintf("You are: %s", user.Username),
+		})
 	default:
 		return
 	}

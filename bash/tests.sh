@@ -12,3 +12,21 @@ docker-compose down -v
 docker-compose up -d
 sleep 10
 docker-compose up tests_e2e
+
+ auth tests
+docker-compose down -v
+docker-compose up -d
+sleep 10
+docker-compose up tests_auth
+
+# posts tests
+docker-compose down -v
+docker-compose up -d
+sleep 10
+docker-compose up tests_posts
+
+# stats tests
+docker-compose down -v
+docker-compose up -d
+sleep 10
+docker-compose up tests_statistics

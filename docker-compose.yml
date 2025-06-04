@@ -178,5 +178,25 @@ services:
     depends_on:
       - kafka
 
+  tests_auth:
+    build:
+      context: tests_auth
+    restart: "no"
+    depends_on:
+      - kafka
+
+  tests_posts:
+    build:
+      context: tests_posts
+    restart: "no"
+    depends_on:
+      - kafka
+
+  tests_statistics:
+    build:
+      context: tests_statistics
+    restart: "no"
+    depends_on:
+      - kafka
 volumes:
   postgres_data:
