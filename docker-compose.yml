@@ -171,7 +171,12 @@ services:
     depends_on:
       - kafka
 
-
+  tests_e2e:
+    build:
+      context: e2e
+    restart: "no"
+    depends_on:
+      - kafka
 
 volumes:
   postgres_data:

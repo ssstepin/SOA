@@ -1,10 +1,10 @@
 FROM python:3.9-alpine
 
-WORKDIR /tests_kafka
+WORKDIR /tests_e2e
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY *.py .
 
-ENTRYPOINT pytest -v
+ENTRYPOINT pytest -vv
